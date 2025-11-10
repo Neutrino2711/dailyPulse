@@ -26,3 +26,7 @@ final class LoadMoods extends MoodblocEvent {
   @override
   List<Object> get props => [email];
 }
+
+final class AnalyzeMoods extends MoodblocEvent {
+  const AnalyzeMoods();
+}

@@ -1,8 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive/hive.dart';
 
+part 'mood_model.g.dart';
+
+@HiveType(typeId: 0)
 class MoodEntry {
+  @HiveField(0)
   final String emoji;
+
+  @HiveField(1)
   final String note;
+
+  @HiveField(2)
   final DateTime date;
 
   MoodEntry({required this.emoji, required this.note, required this.date});

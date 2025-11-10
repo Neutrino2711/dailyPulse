@@ -1,41 +1,22 @@
+import 'package:daily_pulse/constants/consts.dart';
+import 'package:daily_pulse/models/mood_analytics.dart';
+import 'package:daily_pulse/models/mood_model.dart';
+import 'package:daily_pulse/widgets/empty_list_widget.dart';
+import 'package:daily_pulse/widgets/mood_list_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:daily_pulse/blocs/bloc/moodbloc_bloc.dart';
 import 'package:daily_pulse/presentation/add_mood_screen.dart';
-
-const Map<int, String> monthNames = {
-  1: 'January',
-  2: 'February',
-  3: 'March',
-  4: 'April',
-  5: 'May',
-  6: 'June',
-  7: 'July',
-  8: 'August',
-  9: 'September',
-  10: 'October',
-  11: 'November',
-  12: 'December',
-};
-
-List<Color> colors = [
-  Colors.orange.shade500,
-  Colors.yellow.shade500,
-  Colors.green.shade500,
-  Colors.blue.shade500,
-  Colors.indigo.shade500,
-  Colors.purple.shade500,
-  Colors.pink.shade500,
-];
+import 'package:hive_flutter/hive_flutter.dart';
 
 class MoodListScreen extends StatelessWidget {
   final String email;
 
   const MoodListScreen({super.key, required this.email});
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-  }
+  // String _formatDate(DateTime date) {
+  //   return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +27,7 @@ class MoodListScreen extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             // light teal
+            Color(0xFF252525),
             Color(0xFF252525),
             Color(0xFF242424),
             Color(0xFF2C2C2C),
@@ -78,16 +60,35 @@ class MoodListScreen extends StatelessWidget {
           ),
           elevation: 0,
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AddMoodScreen(email: email),
-              ),
-            );
-          },
-          child: const Icon(Icons.add),
+        floatingActionButton: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            FloatingActionButton(
+              backgroundColor: Colors.black26,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddMoodScreen(email: email),
+                  ),
+                );
+              },
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            FloatingActionButton(
+              heroTag: 'clear',
+              backgroundColor: Colors.black26,
+              onPressed: () async {
+                final box = Hive.box<MoodEntry>('moods');
+                await box.clear();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Local Hive data cleared!')),
+                );
+              },
+              child: const Icon(Icons.delete_forever, color: Colors.white),
+            ),
+          ],
         ),
         body: BlocBuilder<MoodblocBloc, MoodblocState>(
           builder: (context, state) {
@@ -97,143 +98,24 @@ class MoodListScreen extends StatelessWidget {
 
             if (state is MoodLoaded) {
               if (state.entries.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.mood, size: 64, color: Colors.grey.shade400),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No mood entries yet',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Tap + to add your first mood',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
+                return EmptyMoodListWidget();
               }
-
-              return Column(
-                children: [
-                  Text(
-                    "Good to see you back!",
-                    style: TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white54,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24.0,
-                      vertical: 12.0,
-                    ),
-                    child: Text(
-                      "Don't let a bad day in life make you feel like you have a bad life",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontStyle: FontStyle.italic,
-                        color: Colors.grey.shade700,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: state.entries.length,
-                      itemBuilder: (context, index) {
-                        final entry = state.entries[index];
-                        final previousEntry = index > 0
-                            ? state.entries[index - 1]
-                            : null;
-
-                        bool isNewMonth =
-                            previousEntry == null ||
-                            entry.date.month != previousEntry.date.month ||
-                            entry.date.year != previousEntry.date.year;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (isNewMonth) ...[
-                              const SizedBox(
-                                height: 24,
-                              ), // extra margin before new month
-                              Text(
-                                '${monthNames[entry.date.month]} ${entry.date.year}',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                            ],
-                            Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              color: colors[index % colors.length],
-                              child: ListTile(
-                                leading: Column(
-                                  children: [
-                                    Text(
-                                      entry.date.day.toString(),
-                                      style: const TextStyle(fontSize: 20),
-                                    ),
-                                    Text(
-                                      monthNames[entry.date.month]!.substring(
-                                        0,
-                                        3,
-                                      ),
-                                      style: const TextStyle(fontSize: 16),
-                                    ),
-                                  ],
-                                ),
-
-                                title: Row(
-                                  children: [
-                                    Text(
-                                      entry.note,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    Spacer(),
-                                    Text(
-                                      entry.emoji,
-                                      style: const TextStyle(fontSize: 24),
-                                    ),
-                                  ],
-                                ),
-                                subtitle: Text(
-                                  entry.note,
-                                  style: TextStyle(color: Colors.grey.shade200),
-                                ),
-                                // subtitle: Text(
-                                //   _formatDate(entry.date),
-                                //   style: TextStyle(color: Colors.grey.shade600),
-                                // ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ],
+              // final counts = <String, int>{};
+              // var positive = 0;
+              // for (final entry in state.entries) {
+              //   counts[entry.emoji] = (counts[entry.emoji] ?? 0) + 1;
+              //   if (positiveEmojis.contains(entry.emoji)) positive++;
+              // }
+              // final analytics = MoodAnalytics(
+              //   total: state.entries.length,
+              //   countsByEmoji: counts,
+              //   positiveCount: positive,
+              // );
+              final analytics =
+                  state.analytics ?? _deriveAnalyticsFromEntries(state.entries);
+              return MoodListWidget(
+                entries: state.entries,
+                analytics: analytics,
               );
             }
 
@@ -245,11 +127,25 @@ class MoodListScreen extends StatelessWidget {
                 ),
               );
             }
-
+            debugPrint('Unknown state: $state');
             return const Center(child: Text('Something went wrong'));
           },
         ),
       ),
     );
   }
+}
+
+MoodAnalytics _deriveAnalyticsFromEntries(List<MoodEntry> entries) {
+  final counts = <String, int>{};
+  var positive = 0;
+  for (final entry in entries) {
+    counts[entry.emoji] = (counts[entry.emoji] ?? 0) + 1;
+    if (positiveEmojis.contains(entry.emoji)) positive++;
+  }
+  return MoodAnalytics(
+    total: entries.length,
+    countsByEmoji: counts,
+    positiveCount: positive,
+  );
 }

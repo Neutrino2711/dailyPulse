@@ -33,7 +33,9 @@ class _AddMoodScreenState extends State<AddMoodScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Mood saved successfully!")),
             );
-            Navigator.pop(context); // Go back to the list screen
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context); // Go back to the list screen
+            }
           }
         },
         child: Padding(
