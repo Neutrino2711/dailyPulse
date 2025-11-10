@@ -23,7 +23,7 @@ class MoodblocBloc extends Bloc<MoodblocEvent, MoodblocState> {
     emit(MoodLoading());
     try {
       final now = DateTime.now();
-      // Create a new mood entry
+ 
       final entry = MoodEntry(
         emoji: event.mood,
         note: event.note ?? '',
@@ -33,7 +33,7 @@ class MoodblocBloc extends Bloc<MoodblocEvent, MoodblocState> {
       final box = Hive.box<MoodEntry>('moods');
       await box.add(entry);
 
-      // Save to Firestore
+      
       await _saveMoodToFirestore(
         email: event.email,
         emoji: event.mood,
@@ -41,7 +41,7 @@ class MoodblocBloc extends Bloc<MoodblocEvent, MoodblocState> {
         date: now,
       );
 
-      // Add to local list and emit new state
+      
       _entries.insert(0, entry);
       debugPrint(_entries.toString());
       emit(MoodLoaded(entries: List.from(_entries)));
@@ -57,12 +57,12 @@ class MoodblocBloc extends Bloc<MoodblocEvent, MoodblocState> {
     required String note,
     required DateTime date,
   }) async {
-    // Reference to the user's document
+   
     final userDocRef = FirebaseFirestore.instance
         .collection('users')
         .doc(email);
 
-    // Add mood to the moods subcollection
+  
     await userDocRef.collection('moods').add({
       'emoji': emoji,
       'note': note,
@@ -76,7 +76,7 @@ class MoodblocBloc extends Bloc<MoodblocEvent, MoodblocState> {
   ) async {
     emit(MoodLoading());
     try {
-      // Reference to the user's moods collection
+    
 
       List<MoodEntry> entries = [];
       try {
@@ -86,7 +86,7 @@ class MoodblocBloc extends Bloc<MoodblocEvent, MoodblocState> {
             .doc(event.email)
             .collection('moods');
 
-        // Get all moods ordered by date
+       
         final querySnapshot = await moodsRef
             .orderBy('date', descending: true)
             .get();
@@ -94,7 +94,7 @@ class MoodblocBloc extends Bloc<MoodblocEvent, MoodblocState> {
         debugPrint(
           "Query snapshot received with ${querySnapshot.docs.first.data()} documents",
         );
-        // Convert the documents to MoodEntry objects
+       
         entries = querySnapshot.docs.map((doc) {
           final data = doc.data();
           return MoodEntry(
@@ -115,7 +115,7 @@ class MoodblocBloc extends Bloc<MoodblocEvent, MoodblocState> {
         entries = box.values.toList();
       }
 
-      // Update local list and emit new state
+      
       _entries.clear();
       _entries.addAll(entries);
       debugPrint(entries.toString());
@@ -131,8 +131,8 @@ class MoodblocBloc extends Bloc<MoodblocEvent, MoodblocState> {
     Emitter<MoodblocState> emit,
   ) async {
     try {
-      // Use current in-memory entries if available; else you can load from Hive/localRepo
-      final entries = List<MoodEntry>.from(_entries); // your in-memory list
+      
+      final entries = List<MoodEntry>.from(_entries);
       final counts = <String, int>{};
       var positive = 0;
       for (final e in entries) {
@@ -147,7 +147,7 @@ class MoodblocBloc extends Bloc<MoodblocEvent, MoodblocState> {
       );
       emit(MoodLoaded(entries: entries, analytics: analytics));
     } catch (e) {
-      // keep existing behavior: don't crash; you may emit MoodError or ignore
+      
       emit(MoodError('Failed to compute analytics: ${e.toString()}'));
     }
   }
